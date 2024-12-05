@@ -31,70 +31,79 @@ class facefinder:
 
 ##class responsible for rendering
 class Stage:
-	#starts by initionling the display size, draws background grid bassed on position
-	def __init__(self):
-		self.disp_h = 0
-		self.disp_w = 0
-		self.cam_h = 720
-		self.cam_w = 1280
-		self.save_x = 960
+    # Initialize the display and camera parameters
+    def __init__(self):
+        self.disp_h = 0
+        self.disp_w = 0
+        self.cam_h = 720
+        self.cam_w = 1280
+        self.save_x = 960  # To smooth horizontal movement
+        self.save_y = 540  # To smooth vertical movement
 
-	#a function that is going to get the position and size face
-	def draw_target_xy(self, img, pos, size):
-		cv2.circle(img, pos, size, (0,0,255), -1)
-		cv2.circle(img, pos, int(size*.8),(255,255,255), -1)
-		cv2.circle(img, pos, int(size*.6),(0,0,255), -1)
-		cv2.circle(img, pos, int(size*.4),(255,255,255), -1)
-		cv2.circle(img, pos, int(size*.2),(0,0,255), -1)
+    # A function to draw target circles
+    def draw_target_xy(self, img, pos, size):
+        cv2.circle(img, pos, size, (0, 0, 255), -1)
+        cv2.circle(img, pos, int(size * 0.8), (255, 255, 255), -1)
+        cv2.circle(img, pos, int(size * 0.6), (0, 0, 255), -1)
+        cv2.circle(img, pos, int(size * 0.4), (255, 255, 255), -1)
+        cv2.circle(img, pos, int(size * 0.2), (0, 0, 255), -1)
 
-	#a fuction that is going to render the postion and size of the targets
-	def draw_targetz(self,pos, facexy):
-		tx,ty,tz = pos
-		cv2.line(img,(ball0x, ball0y),50,(255,0,0), -1)
-		cv2.line(img, (960+ int((600-960)*.3**2),540),(ball0x, ball0y),(255,0,0),3)
+    # Update method to handle rendering based on face position
+    def update(self, facexy):
+        x, y = facexy
+        e = 0.9  # Smoothing factor
 
-	#a function that redraws all the tunal and the targets 
-	def update(self, facexy):
-		x,y = facexy
-		e = .9 #for smoothing constantly
-		x = e * x + (1-e)*self.save_x
-		self.save_x = x
-		img = np.zeros([1080, 1920, 3])
-		decay = .3
-		sx = sy = 0
-		dx = int((x - self.cam_w/2)*2)
-		for i in range(1,7):
-			sx = sx + int((960-sx)*decay)
-			sy = sy + int((540-sy)*decay)
-			dx = int(dx * decay)
-			#print(sx,sy)
-			cv2.rectangle(img, (sx+dx,sy),(1920-sx+dx, 1080-sy),(255,255,255),1)
+        # Smooth the x and y positions
+        x = e * x + (1 - e) * self.save_x
+        y = e * y + (1 - e) * self.save_y
 
-			ball0x = 600+int((x - self.cam_w/2)*2*.6)
-			ball0y = 540
+        # Save the smoothed positions
+        self.save_x = x
+        self.save_y = y
 
-			cv2.line(img, (960+ int((600-960)*.3**2),540),(ball0x, ball0y),(255,0,0),3)
-			self.draw_target_xy(img, (ball0x,ball0x),35)
+        # Create a blank image
+        img = np.zeros([1080, 1920, 3], dtype=np.uint8)
 
-			ball1x = 1000 + int((x - self.cam_w/2)*2*.2)
-			ball1y = 440
+        decay = 0.3
+        sx = sy = 0
+        dx = int((x - self.cam_w / 2) * 2)
+        dy = int((y - self.cam_h / 2) * 2)  # Vertical offset based on smoothed y
 
-			cv2.line(img, (960+ int((1200-960)*.3**2), 540 - int((540 - 340)*.3**2)),(ball1x, ball1y),(255,0,0),3)
-			self.draw_target_xy(img, (ball1x, ball1y), 25)
+        for i in range(1, 7):
+            # Adjust the shrinking rectangle dimensions with decay
+            sx = sx + int((960 - sx) * decay)
+            sy = sy + int((540 - sy) * decay)
+            dx = int(dx * decay)
+            dy = int(dy * decay)
 
-			ball2x = 1100 + int((x - self.cam_w/2)*2*.9)
-			ball2y = 650
+            # Draw shrinking rectangles
+            cv2.rectangle(img, (sx + dx, sy + dy), (1920 - sx + dx, 1080 - sy + dy), (255, 255, 255), 1)
 
-			cv2.line(img, (960+int((1100-960)*.3**2),540 - int((540-650)*.3**2)),(ball2x, ball2y), (255, 0, 0),3)
-			self.draw_target_xy(img, (ball2x, ball2y),50)
+        # Draw targets and lines based on the smoothed x and y
+        ball0x = 600 + int((x - self.cam_w / 2) * 0.6)
+        ball0y = 540 + int((y - self.cam_h / 2) * 0.6)
+        cv2.line(img, (960 + int((600 - 960) * 0.3**2), 540), (ball0x, ball0y), (255, 0, 0), 3)
+        self.draw_target_xy(img, (ball0x, ball0y), 35)
 
-			cv2.imshow("parcia's Game" ,img)
+        ball1x = 1000 + int((x - self.cam_w / 2) * 0.2)
+        ball1y = 440 + int((y - self.cam_h / 2) * 0.2)
+        cv2.line(img, (960 + int((1200 - 960) * 0.3**2), 540 - int((540 - 340) * 0.3**2)), (ball1x, ball1y), (255, 0, 0), 3)
+        self.draw_target_xy(img, (ball1x, ball1y), 25)
+
+        ball2x = 1100 + int((x - self.cam_w / 2) * 0.9)
+        ball2y = 650 + int((y - self.cam_h / 2) * 0.9)
+        cv2.line(img, (960 + int((1100 - 960) * 0.3**2), 540 - int((540 - 650) * 0.3**2)), (ball2x, ball2y), (255, 0, 0), 3)
+        self.draw_target_xy(img, (ball2x, ball2y), 50)
+
+        # Show the image in a window
+        cv2.imshow("Parcia's Game: q to EXIT", img)
+
 '''----------------------------------------------------------------------------------------------------------------------'''
 ##main code
 ff = facefinder()
 stage = Stage()
 img = np.zeros([1080,1920,3])
-cv2.imshow("parcia's Game", img)
+#cv2.imshow("parcia's Game", img)
 #get accesse to the web cap
 cap = cv2.VideoCapture(cv2.CAP_ANY)
 if not cap.isOpened():
