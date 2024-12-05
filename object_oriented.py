@@ -2,7 +2,7 @@
 '''this will be the an object oriented version 
 of the virtual game'''
 import cv2
-import numpy as nu
+import numpy as np
 
 class facefinder:
 	'''this is going to use haar cascade as filter to detect the largest face'''
@@ -62,7 +62,7 @@ class Stage:
 		img = np.zeros([1080, 1920, 3])
 		decay = .3
 		sx = sy = 0
-		dx = int((x - self.com_w/2)*2)
+		dx = int((x - self.cam_w/2)*2)
 		for i in range(1,7):
 			sx = sx + int((960-sx)*decay)
 			sy = sy + int((540-sy)*decay)
@@ -70,49 +70,60 @@ class Stage:
 			#print(sx,sy)
 			cv2.rectangle(img, (sx+dx,sy),(1920-sx+dx, 1080-sy),(255,255,255),1)
 
-			ball0x = 600+int((x - self.com_w/2)*2*.6)
+			ball0x = 600+int((x - self.cam_w/2)*2*.6)
 			ball0y = 540
 
 			cv2.line(img, (960+ int((600-960)*.3**2),540),(ball0x, ball0y),(255,0,0),3)
 			self.draw_target_xy(img, (ball0x,ball0x),35)
 
-			ball1x = 1000 + int((x - self.com_w/2)*2*.2)
+			ball1x = 1000 + int((x - self.cam_w/2)*2*.2)
 			ball1y = 440
 
-			cv2.line(img, (960+ int((1200-960)*.3**2), 540 - int((540 - 340)*.3**2)),(ball1x, ball1y)(255,0,0),3)
+			cv2.line(img, (960+ int((1200-960)*.3**2), 540 - int((540 - 340)*.3**2)),(ball1x, ball1y),(255,0,0),3)
 			self.draw_target_xy(img, (ball1x, ball1y), 25)
 
-			ball2x = 1100 + int((x - self.com_w/2)*2*.9)
+			ball2x = 1100 + int((x - self.cam_w/2)*2*.9)
 			ball2y = 650
 
 			cv2.line(img, (960+int((1100-960)*.3**2),540 - int((540-650)*.3**2)),(ball2x, ball2y), (255, 0, 0),3)
 			self.draw_target_xy(img, (ball2x, ball2y),50)
 
-			cv2,imshow("parcia's Game" ,img)
+			cv2.imshow("parcia's Game" ,img)
 '''----------------------------------------------------------------------------------------------------------------------'''
 ##main code
 ff = facefinder()
+stage = Stage()
+img = np.zeros([1080,1920,3])
+cv2.imshow("parcia's Game", img)
 #get accesse to the web cap
 cap = cv2.VideoCapture(cv2.CAP_ANY)
 if not cap.isOpened():
 	print("couldn't open web cam")
 	exit()
 
+moved = False
 
 while True:
-	retval, frame = cap.read()
-	if retval == False:
-		print("camera error")
+	#reads the frame
+	ret, frame = cap.read()
+	#if frame is read correctly ret is true
+	if not ret:
+		print("error reading frame. Exiting.....")
 
-	ff.find_face(frame)
-	cv2.imshow('q to quit', frame)
+	facexy = ff.find_face(frame)
+	frame_small = cv2.resize(frame, (frame.shape[1]//4, frame.shape[0]//4), interpolation = cv2.INTER_LINEAR)
+	cv2.imshow('q to quit', frame_small)
 
-	if cv2.waitKey(30) == ord("q"):
+	if not moved:
+		cv2.moveWindow('q to quit', 1080,0)
+		moved = True
+	if facexy is not None:
+		img = stage.update(facexy)
+
+	#stops the game if q is pressed
+	if cv2.waitKey(30) == ord('q'):
 		break
 
-
-
-#destroys the cam
+#Release the video capture object
 cap.release()
-
-print ('starting oo virtual3D')
+cv2.destroyAllWindows
